@@ -1,0 +1,86 @@
+---
+title: "UTS GANJIL"
+author: "Desi Kristiyani/ 221810237/ 09/3SD2"
+date: "10/27/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+#Klasifikasi/Prediksi status Inflammation dan Nephritis pasien Urinary Disease
+Attribute Information:
+
+1 Temperature of patient { 35C-42C }
+2 Occurrence of nausea { yes, no }
+3 Lumbar pain { yes, no }
+4 Urine pushing (continuous need for urination) { yes, no }
+5 Micturition pains { yes, no }
+6 Burning of urethra, itch, swelling of urethra outlet { yes, no }
+7 decision: Inflammation of urinary bladder { yes, no }
+8 decision: Nephritis of renal pelvis origin { yes, no } 
+
+#ID3
+#Membaca data
+```{r,comment="",echo=TRUE}
+diagnosis<-read.csv("D:/Sem 5/DMKM/UTS DMKM/diagnosis.txt",header=F,sep="",col.names = c("Temp","Occur","Lumbar","Urine","Micturition","Burning","Inflam","Nephritis"))
+#View(diagnosis)
+str(diagnosis)
+
+#Ubah tipe variabel yang aneh/tidak sesuai
+for(i in names(diagnosis)){
+  diagnosis[,i]= as.factor(diagnosis[,i])
+}
+diagnosis$Temp<-as.numeric(diagnosis$Temp)
+
+diagnosis$Temp<-as.factor(cut(diagnosis$Temp,breaks = c(0,38,40,Inf),labels = c("low","medium","high")))
+str(diagnosis)
+```
+
+#Split Data
+```{r,comment="",echo=TRUE}
+library(party) #untuk membuat visualisasi dari decision tree
+library(psych) #untuk melihat korelasi antar variabel
+library(caret) #untuk membuat confusion matriks dan melihar akurasi model
+
+set.seed(1234)
+sampel <- sample(2,nrow(diagnosis),replace = T, prob = c(0.8,0.2)) #metode holdout dengan random sampling
+trainingdat <- diagnosis[sampel==1, ]
+testingdat <- diagnosis[sampel==2, ]
+print(paste("Jumlah train data :", nrow(trainingdat)))
+print(paste("Jumlah test data :", nrow(testingdat)))
+
+```
+
+### Pemodelan Inflammations
+Misal kita ingin menggunakan semua atributnya
+```{r}
+pohonnya1 <- ctree(Inflam~Urine+Micturition+Burning+Temp, data=trainingdat)
+plot(pohonnya1)
+```
+
+###Pemodelan Nephritis
+Misal kita ingin menggunakan semua atributnya
+```{r}
+pohonnya2 <- ctree(Nephritis~Lumbar+Occur+Burning+Temp, data=trainingdat)
+plot(pohonnya2)
+```
+
+#Evaluasi dari Inflammations
+```{r,comment="",echo=TRUE}
+prediksi <- predict(pohonnya1, testingdat)
+confusionMatrix(table(prediksi,testingdat$Inflam))
+```
+
+#Evaluasi dari Nephritis
+```{r,comment="",echo=TRUE}
+prediksi <- predict(pohonnya2, testingdat)
+confusionMatrix(table(prediksi,testingdat$Nephritis))
+
+```
+
